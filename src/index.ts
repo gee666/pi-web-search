@@ -77,7 +77,6 @@ export default function (pi: ExtensionAPI) {
 
     const toolManager = createModelScopedToolManager(pi);
     pi.on("session_start", (_event, ctx) => toolManager.sync(ctx.model));
-    pi.on("session_switch", (_event, ctx) => toolManager.sync(ctx.model));
     pi.on("session_tree", (_event, ctx) => toolManager.sync(ctx.model));
     pi.on("model_select", (event) => toolManager.sync(event.model));
 }

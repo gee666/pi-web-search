@@ -1,12 +1,13 @@
 {
   "name": "pi-web-search",
-  "version": "1.2.0",
+  "version": "1.2.1",
   "description": "Provider-native web search for pi across Google Gemini, OpenAI, and Anthropic, plus Gemini URL Context",
   "type": "module",
   "main": "src/index.ts",
   "keywords": [
     "pi",
     "pi-extension",
+    "pi-package",
     "web-search",
     "gemini",
     "google",
@@ -38,13 +39,18 @@
   "devDependencies": {
     "@earendil-works/pi-ai": "^0.75.4",
     "@earendil-works/pi-coding-agent": "^0.75.4",
-    "@sinclair/typebox": "^0.34.49",
     "@types/node": "^25.9.1",
+    "typebox": "^1.1.38",
     "typescript": "^6.0.3"
   },
   "pi": {
     "extensions": [
       "./src/index.ts"
     ]
+  },
+  "peerDependencies": {
+    "@earendil-works/pi-ai": "*",
+    "@earendil-works/pi-coding-agent": "*",
+    "typebox": "*"
   }
 }

@@ -1,5 +1,5 @@
 import type { ExtensionContext, AgentToolUpdateCallback } from "@earendil-works/pi-coding-agent";
-import { Type, type Static } from "@sinclair/typebox";
+import { Type, type Static } from "typebox";
 import { callApiStream, getConfig, applyCitations } from "./api.ts";
 import { getModel, missingConfigResult, errorResult, formatResult } from "./utils.ts";
 
