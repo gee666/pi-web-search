@@ -1,6 +1,6 @@
 {
   "name": "oira666_pi-web-search",
-  "version": "1.2.1",
+  "version": "0.0.1",
   "description": "Provider-native web search for pi across Google Gemini, OpenAI, and Anthropic, plus Gemini URL Context",
   "type": "module",
   "main": "src/index.ts",
