@@ -7,6 +7,10 @@ import { urlContext, UrlContextSchema } from "./url_context.ts";
 const WEB_SEARCH_TOOL = "web_search";
 const URL_CONTEXT_TOOL = "url_context";
 
+function supportsWebSearch(model: Model<any> | undefined) {
+    return !!model && getProviderKind(model) !== "unsupported";
+}
+
 function supportsUrlContext(model: Model<any> | undefined) {
     return !!model && getProviderKind(model) === "google";
 }
@@ -42,6 +46,12 @@ export function createModelScopedToolManager(pi: Pick<ExtensionAPI, "getActiveTo
 
         const desiredActiveTools = new Set(preferredActiveTools);
         suppressedTools = new Set<string>();
+        if (!supportsWebSearch(model)) {
+            desiredActiveTools.delete(WEB_SEARCH_TOOL);
+            if (preferredActiveTools.has(WEB_SEARCH_TOOL)) {
+                suppressedTools.add(WEB_SEARCH_TOOL);
+            }
+        }
         if (!supportsUrlContext(model)) {
             desiredActiveTools.delete(URL_CONTEXT_TOOL);
             if (preferredActiveTools.has(URL_CONTEXT_TOOL)) {

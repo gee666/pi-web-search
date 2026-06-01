@@ -225,7 +225,7 @@ test('url_context warns when Gemini returns no verified URL context metadata', a
   }
 });
 
-test('model-scoped tool manager removes url_context for non-Gemini and restores it for Gemini', async () => {
+test('model-scoped tool manager removes unsupported tools and restores them when supported', async () => {
   let activeTools = ['read', 'web_search', 'url_context'];
   const changes = [];
   const manager = createModelScopedToolManager({
@@ -238,10 +238,13 @@ test('model-scoped tool manager removes url_context for non-Gemini and restores 
     },
   });
 
+  manager.sync({ id: 'local-test', provider: 'local', api: 'local' });
+  assert.deepEqual(activeTools, ['read']);
+
   manager.sync({ id: 'gpt-test', provider: 'proxy-provider', api: 'openai-responses' });
   assert.deepEqual(activeTools, ['read', 'web_search']);
 
   manager.sync({ id: 'gemini-test', provider: 'proxy-provider', api: 'google-generative-ai' });
   assert.deepEqual(activeTools, ['read', 'web_search', 'url_context']);
-  assert.equal(changes.length >= 2, true);
+  assert.equal(changes.length >= 3, true);
 });

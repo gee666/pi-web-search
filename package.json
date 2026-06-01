@@ -1,5 +1,5 @@
 {
-  "name": "pi-web-search",
+  "name": "oira666_pi-web-search",
   "version": "1.2.1",
   "description": "Provider-native web search for pi across Google Gemini, OpenAI, and Anthropic, plus Gemini URL Context",
   "type": "module",
@@ -21,12 +21,12 @@
   "license": "MIT",
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/ttttmr/pi-web-search.git"
+    "url": "git+https://github.com/gee666/pi-web-search.git"
   },
   "bugs": {
-    "url": "https://github.com/ttttmr/pi-web-search/issues"
+    "url": "https://github.com/gee666/pi-web-search/issues"
   },
-  "homepage": "https://github.com/ttttmr/pi-web-search#readme",
+  "homepage": "https://github.com/gee666/pi-web-search#readme",
   "files": [
     "src",
     "README.md"

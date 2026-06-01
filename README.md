@@ -1,6 +1,6 @@
-# pi-web-search
+# oira666_pi-web-search
 
-Provider-native web search for [pi](https://github.com/earendil-works/pi-coding-agent), across Google Gemini, OpenAI, and Anthropic, plus Gemini-only URL Context analysis.
+Provider-native web search for [pi](https://github.com/earendil-works/pi-coding-agent), across the currently selected Google Gemini, OpenAI, or Anthropic model, plus Gemini-only URL Context analysis.
 
 ## Tools
 
@@ -25,14 +25,14 @@ When using `google-generative-ai`, YouTube URLs are passed as `file_data` for na
 ## Install
 
 ```bash
-pi install npm:pi-web-search
+pi install npm:oira666_pi-web-search
 ```
 
 ## Usage
 
-No extra config needed. Just configure any supported provider in pi and the tools auto-detect it.
+No extra config needed. Select a supported provider/model in pi and the tools use the currently selected session model.
 
-`url_context` is automatically removed from active tools when using a non-Gemini model.
+The extension does not switch models or fall back to another configured model. If the currently selected model does not support provider-native web search, `web_search` is automatically removed from active tools. `url_context` is automatically removed from active tools when using a non-Gemini model.
 
 ## Test
 

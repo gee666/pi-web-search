@@ -20,57 +20,21 @@ function isSupportedSearchModel(model: Model<any> | undefined): model is Model<a
     return getProviderKind(model) !== "unsupported";
 }
 
-function providerPriority(model: Model<any>): number {
-    const priorities = [
-        "google",
-        "google-generative-ai",
-        "openai",
-        "anthropic",
-    ];
-    const providerIndex = priorities.indexOf(model.provider);
-    if (providerIndex >= 0) return providerIndex;
-    return priorities.length;
-}
-
-function modelPriority(model: Model<any>): number {
-    const id = model.id;
-    const patterns = [
-        /gemini-3.*flash/i,
-        /gemini-2\.5.*flash/i,
-        /gemini-2\.0.*flash/i,
-        /gemini.*flash/i,
-        /gpt-5\..*mini/i,
-        /gpt-4\.1.*mini/i,
-        /gpt-4o-mini/i,
-        /claude.*haiku/i,
-        /claude.*sonnet/i,
-    ];
-    const patternIndex = patterns.findIndex((pattern) => pattern.test(id));
-    return patternIndex >= 0 ? patternIndex : patterns.length;
-}
-
 export async function getModel(ctx: ExtensionContext): Promise<Model<any> | undefined> {
-    // Use the current model first so the tool follows the user's selected provider.
-    // This lets pi --provider openai/anthropic/google automatically pick the matching API.
+    // Web search must use the currently selected session model only.
+    // Do not silently fall back to or select a different configured model.
     if (isSupportedSearchModel(ctx.model)) {
         return ctx.model;
     }
 
-    const models = ctx.modelRegistry.getAvailable().filter(isSupportedSearchModel);
-    if (models.length === 0) return undefined;
-
-    return models.sort((a, b) => {
-        const byProvider = providerPriority(a) - providerPriority(b);
-        if (byProvider !== 0) return byProvider;
-        return modelPriority(a) - modelPriority(b);
-    })[0];
+    return undefined;
 }
 
 // --- Error Results ---
 
 export function missingConfigResult(ctx: ExtensionContext): AgentToolResult<any> {
     const current = ctx.model ? `${ctx.model.provider} (${ctx.model.api})` : "none";
-    const msg = `No supported web-search model configuration found. Current model: ${current}. Configure or select a supported provider: google-generative-ai, openai, or anthropic.`;
+    const msg = `The currently selected model does not support web search. Current model: ${current}. Select a supported provider: google-generative-ai, openai, or anthropic.`;
     return { content: [{ type: "text", text: `Failed: ${msg}` }], details: { error: "missing_config" } };
 }
 
