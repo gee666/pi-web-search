@@ -11,9 +11,12 @@ function sse(events) {
   }).join('');
 }
 
-function mockCtx(apiKey = 'test-key', model = undefined) {
+function mockCtx(apiKey = 'test-key', model = undefined, systemPrompt = '') {
   return {
     model,
+    getSystemPrompt() {
+      return systemPrompt;
+    },
     modelRegistry: {
       async getApiKeyAndHeaders() {
         return { ok: true, apiKey };
@@ -168,7 +171,7 @@ test('Anthropic stream exposes server web search, result URLs, and citation deta
   }
 });
 
-test('Anthropic OAuth stream sends Claude Code identity and conservative search settings', async () => {
+test('Anthropic OAuth stream reuses effective system prompt and conservative search settings', async () => {
   const previousFetch = globalThis.fetch;
   globalThis.fetch = async (_url, init) => {
     assert.equal(init.headers.Authorization, 'Bearer sk-ant-oat-test');
@@ -179,7 +182,7 @@ test('Anthropic OAuth stream sends Claude Code identity and conservative search 
     const body = JSON.parse(init.body);
     assert.equal(body.max_tokens, 1024);
     assert.deepEqual(body.system, [{ type: 'text', text: "You are Claude Code, Anthropic's official CLI for Claude." }]);
-    assert.deepEqual(body.thinking, { type: 'disabled' });
+    assert.equal(body.thinking, undefined);
     assert.deepEqual(body.tools[0], { type: 'web_search_20250305', name: 'web_search', max_uses: 1 });
     return makeResponse([
       { data: { type: 'content_block_start', index: 0, content_block: { type: 'server_tool_use', id: 'srv_oauth', name: 'web_search', input: { query: 'Node.js release' } } } },
@@ -189,7 +192,7 @@ test('Anthropic OAuth stream sends Claude Code identity and conservative search 
   };
 
   try {
-    const result = await callApiStream(mockCtx('sk-ant-oat-test'), {
+    const result = await callApiStream(mockCtx('sk-ant-oat-test', undefined, "You are Claude Code, Anthropic's official CLI for Claude.\n\nExtra pi-limits-wait prompt text"), {
       id: 'claude-opus-4-8',
       provider: 'anthropic',
       api: 'anthropic-messages',

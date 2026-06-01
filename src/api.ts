@@ -814,10 +814,13 @@ async function callAnthropicStream(
         stream: true,
     };
     if (isOAuth) {
-        requestBody.system = [{ type: "text", text: "You are Claude Code, Anthropic's official CLI for Claude." }];
-        if (model.reasoning) requestBody.thinking = { type: "disabled" };
+        const systemPrompt = ctx.getSystemPrompt?.().trim();
+        const claudeCodeIdentity = systemPrompt
+            ?.split(/\n\n+/)
+            .find((part) => /Anthropic's official CLI for Claude/i.test(part))
+            ?.trim();
+        if (claudeCodeIdentity) requestBody.system = [{ type: "text", text: claudeCodeIdentity }];
     }
-
     const response = await fetch(resolveAnthropicMessagesUrl(model.baseUrl), {
         method: "POST",
         headers,
