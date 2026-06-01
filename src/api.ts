@@ -797,19 +797,26 @@ async function callAnthropicStream(
                 : "claude-code-20250219,oauth-2025-04-20";
             headers["user-agent"] = headers["user-agent"] || "claude-cli/2.1.75";
             headers["x-app"] = headers["x-app"] || "cli";
+            headers["anthropic-dangerous-direct-browser-access"] = headers["anthropic-dangerous-direct-browser-access"] || "true";
         } else if (!headers["x-api-key"] && !headers["X-Api-Key"]) {
             headers["x-api-key"] = auth.apiKey;
         }
     }
 
-    const maxTokens = Math.min(Math.max(1024, Math.floor(model.maxTokens / 3) || 4096), 8192);
-    const requestBody = {
+    const maxTokens = isOAuth
+        ? 1024
+        : Math.min(Math.max(1024, Math.floor(model.maxTokens / 3) || 4096), 8192);
+    const requestBody: any = {
         model: model.id,
         max_tokens: maxTokens,
         messages: [{ role: "user", content: prompt }],
-        tools: [{ type: "web_search_20250305", name: "web_search", max_uses: 10 }],
+        tools: [{ type: "web_search_20250305", name: "web_search", max_uses: isOAuth ? 1 : 10 }],
         stream: true,
     };
+    if (isOAuth) {
+        requestBody.system = [{ type: "text", text: "You are Claude Code, Anthropic's official CLI for Claude." }];
+        if (model.reasoning) requestBody.thinking = { type: "disabled" };
+    }
 
     const response = await fetch(resolveAnthropicMessagesUrl(model.baseUrl), {
         method: "POST",

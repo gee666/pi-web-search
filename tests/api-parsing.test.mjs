@@ -168,6 +168,46 @@ test('Anthropic stream exposes server web search, result URLs, and citation deta
   }
 });
 
+test('Anthropic OAuth stream sends Claude Code identity and conservative search settings', async () => {
+  const previousFetch = globalThis.fetch;
+  globalThis.fetch = async (_url, init) => {
+    assert.equal(init.headers.Authorization, 'Bearer sk-ant-oat-test');
+    assert.match(init.headers['anthropic-beta'], /claude-code-20250219/);
+    assert.match(init.headers['anthropic-beta'], /oauth-2025-04-20/);
+    assert.equal(init.headers['anthropic-dangerous-direct-browser-access'], 'true');
+    assert.equal(init.headers['x-app'], 'cli');
+    const body = JSON.parse(init.body);
+    assert.equal(body.max_tokens, 1024);
+    assert.deepEqual(body.system, [{ type: 'text', text: "You are Claude Code, Anthropic's official CLI for Claude." }]);
+    assert.deepEqual(body.thinking, { type: 'disabled' });
+    assert.deepEqual(body.tools[0], { type: 'web_search_20250305', name: 'web_search', max_uses: 1 });
+    return makeResponse([
+      { data: { type: 'content_block_start', index: 0, content_block: { type: 'server_tool_use', id: 'srv_oauth', name: 'web_search', input: { query: 'Node.js release' } } } },
+      { data: { type: 'content_block_start', index: 1, content_block: { type: 'web_search_tool_result', tool_use_id: 'srv_oauth', content: [{ type: 'web_search_result', title: 'Node.js', url: 'https://nodejs.org/en/blog/release', page_age: null }] } } },
+      { data: { type: 'content_block_delta', index: 2, delta: { type: 'text_delta', text: 'Node.js release found.' } } },
+    ]);
+  };
+
+  try {
+    const result = await callApiStream(mockCtx('sk-ant-oat-test'), {
+      id: 'claude-opus-4-8',
+      provider: 'anthropic',
+      api: 'anthropic-messages',
+      baseUrl: 'https://api.anthropic.com',
+      maxTokens: 128000,
+      reasoning: true,
+      headers: {},
+    }, { contents: [{ parts: [{ text: 'Search Node.js release' }] }] });
+
+    assert.equal(result.providerKind, 'anthropic');
+    assert.equal(result.nativeSearchUsed, true);
+    assert.equal(result.searchQueries[0], 'Node.js release');
+    assert.equal(result.sources[0].url, 'https://nodejs.org/en/blog/release');
+  } finally {
+    globalThis.fetch = previousFetch;
+  }
+});
+
 test('Google stream exposes grounding queries, chunks, support citations, and resolves redirect URLs', async () => {
   const previousFetch = globalThis.fetch;
   globalThis.fetch = async (url, init = {}) => {
