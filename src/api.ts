@@ -33,7 +33,7 @@ const GOOGLE_PROVIDERS: Record<string, ProviderConfig> = {
 
 export function getProviderKind(model: Model<any>): ProviderKind {
     if (GOOGLE_PROVIDERS[model.provider] || GOOGLE_PROVIDERS[model.api]) return "google";
-    if (model.api === "openai-responses") return "openai";
+    if (model.api === "openai-responses" || model.api === "openai-codex-responses") return "openai";
     if (model.api === "anthropic-messages") return "anthropic";
     return "unsupported";
 }
@@ -213,6 +213,26 @@ function trimTrailingSlash(value: string): string {
 function resolveAnthropicMessagesUrl(baseUrl: string): string {
     const base = trimTrailingSlash(baseUrl);
     return base.endsWith("/v1") ? `${base}/messages` : `${base}/v1/messages`;
+}
+
+function resolveOpenAICodexResponsesUrl(baseUrl: string): string {
+    const base = trimTrailingSlash(baseUrl || "https://chatgpt.com/backend-api");
+    if (base.endsWith("/codex/responses")) return base;
+    if (base.endsWith("/codex")) return `${base}/responses`;
+    return `${base}/codex/responses`;
+}
+
+function extractChatGptAccountId(token: string): string | undefined {
+    try {
+        const payload = token.split(".")[1];
+        if (!payload) return undefined;
+        const normalized = payload.replace(/-/g, "+").replace(/_/g, "/");
+        const padded = normalized.padEnd(Math.ceil(normalized.length / 4) * 4, "=");
+        const decoded = JSON.parse(Buffer.from(padded, "base64").toString("utf8"));
+        return decoded?.["https://api.openai.com/auth"]?.chatgpt_account_id;
+    } catch {
+        return undefined;
+    }
 }
 
 function pushUniqueSource(sources: Source[], source: Source): number {
@@ -561,6 +581,7 @@ async function callOpenAIStream(
         throw new Error(auth.error || "Failed to get API key and headers");
     }
 
+    const isCodex = model.api === "openai-codex-responses";
     const headers: Record<string, string> = {
         "Content-Type": "application/json",
         "Accept": "text/event-stream",
@@ -571,19 +592,43 @@ async function callOpenAIStream(
         headers.Authorization = `Bearer ${auth.apiKey}`;
     }
 
-    const requestBody: any = {
-        model: model.id,
-        input: prompt,
-        tools: [{ type: "web_search" }],
-        include: ["web_search_call.action.sources", "web_search_call.results"],
-        stream: true,
-        store: false,
-    };
-    if (model.reasoning) {
-        requestBody.reasoning = { effort: "none" };
+    let requestBody: any;
+    let requestUrl: string;
+    if (isCodex) {
+        const token = auth.apiKey || headers.Authorization?.replace(/^Bearer\s+/i, "") || headers.authorization?.replace(/^Bearer\s+/i, "");
+        const accountId = token ? extractChatGptAccountId(token) : undefined;
+        if (token) headers.Authorization = `Bearer ${token}`;
+        if (accountId && !headers["chatgpt-account-id"]) headers["chatgpt-account-id"] = accountId;
+        headers["OpenAI-Beta"] = headers["OpenAI-Beta"] || "responses=experimental";
+        headers["originator"] = headers["originator"] || "pi";
+
+        requestUrl = resolveOpenAICodexResponsesUrl(model.baseUrl);
+        requestBody = {
+            model: model.id,
+            instructions: "You are a helpful assistant. Use web search when needed and cite sources.",
+            input: [{ role: "user", content: [{ type: "input_text", text: prompt }] }],
+            tools: [{ type: "web_search" }],
+            include: ["web_search_call.action.sources", "web_search_call.results"],
+            stream: true,
+            store: false,
+            tool_choice: "auto",
+        };
+    } else {
+        requestUrl = `${trimTrailingSlash(model.baseUrl)}/responses`;
+        requestBody = {
+            model: model.id,
+            input: prompt,
+            tools: [{ type: "web_search" }],
+            include: ["web_search_call.action.sources", "web_search_call.results"],
+            stream: true,
+            store: false,
+        };
+        if (model.reasoning) {
+            requestBody.reasoning = { effort: "none" };
+        }
     }
 
-    const response = await fetch(`${trimTrailingSlash(model.baseUrl)}/responses`, {
+    const response = await fetch(requestUrl, {
         method: "POST",
         headers,
         body: JSON.stringify(requestBody),
@@ -591,7 +636,7 @@ async function callOpenAIStream(
     });
 
     if (!response.ok) {
-        throw new Error(`OpenAI API error (${response.status}): ${await response.text()}`);
+        throw new Error(`${isCodex ? "OpenAI Codex" : "OpenAI"} API error (${response.status}): ${await response.text()}`);
     }
 
     let accumulatedText = "";
@@ -674,7 +719,7 @@ async function callOpenAIStream(
             collectAnnotation(event.annotation);
         } else if (event.type === "response.output_item.added" || event.type === "response.output_item.done") {
             collectWebSearchCall(event.item);
-        } else if (event.type === "response.completed") {
+        } else if (event.type === "response.completed" || event.type === "response.done" || event.type === "response.incomplete") {
             collectFromResponse(event.response);
         } else if (event.type === "response.web_search_call.in_progress" || event.type === "response.web_search_call.searching" || event.type === "response.web_search_call.completed") {
             pushNativeSearchEvent(nativeSearchEvents, event.type);

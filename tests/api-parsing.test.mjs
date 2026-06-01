@@ -84,6 +84,49 @@ test('OpenAI stream exposes native search calls, queries, URLs, and citations', 
   }
 });
 
+test('OpenAI Codex OAuth stream uses codex endpoint and exposes web search', async () => {
+  const previousFetch = globalThis.fetch;
+  const tokenPayload = Buffer.from(JSON.stringify({ 'https://api.openai.com/auth': { chatgpt_account_id: 'acct_test' } })).toString('base64url');
+  const token = `header.${tokenPayload}.sig`;
+
+  globalThis.fetch = async (url, init) => {
+    assert.equal(url, 'https://chatgpt.com/backend-api/codex/responses');
+    assert.equal(init.headers.Authorization, `Bearer ${token}`);
+    assert.equal(init.headers['chatgpt-account-id'], 'acct_test');
+    assert.equal(init.headers['OpenAI-Beta'], 'responses=experimental');
+    const body = JSON.parse(init.body);
+    assert.equal(body.instructions.length > 0, true);
+    assert.deepEqual(body.input, [{ role: 'user', content: [{ type: 'input_text', text: 'Search current news' }] }]);
+    assert.equal(body.tools[0].type, 'web_search');
+    return makeResponse([
+      { data: { type: 'response.web_search_call.searching', item_id: 'ws_codex' } },
+      { data: { type: 'response.output_text.delta', delta: 'Codex found news' } },
+      { data: { type: 'response.output_text.annotation.added', annotation: { type: 'url_citation', end_index: 16, url_citation: { title: 'News source', url: 'https://example.com/news' } } } },
+      { data: { type: 'response.done', response: { output: [
+        { type: 'web_search_call', id: 'ws_codex', status: 'completed', action: { type: 'search', queries: ['current news'], sources: [{ type: 'url', title: 'News source', url: 'https://example.com/news' }] } },
+      ] } } },
+    ]);
+  };
+
+  try {
+    const result = await callApiStream(mockCtx(token), {
+      id: 'gpt-5.4-mini',
+      provider: 'openai-codex',
+      api: 'openai-codex-responses',
+      baseUrl: 'https://chatgpt.com/backend-api',
+      reasoning: true,
+      headers: {},
+    }, { contents: [{ parts: [{ text: 'Search current news' }] }] });
+
+    assert.equal(result.providerKind, 'openai');
+    assert.equal(result.nativeSearchUsed, true);
+    assert.deepEqual(result.searchQueries, ['current news']);
+    assert.equal(result.sources[0].url, 'https://example.com/news');
+  } finally {
+    globalThis.fetch = previousFetch;
+  }
+});
+
 test('Anthropic stream exposes server web search, result URLs, and citation details', async () => {
   const previousFetch = globalThis.fetch;
   globalThis.fetch = async (_url, init) => {
