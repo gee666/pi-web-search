@@ -617,7 +617,7 @@ async function callOpenAIStream(
         requestUrl = `${trimTrailingSlash(model.baseUrl)}/responses`;
         requestBody = {
             model: model.id,
-            input: prompt,
+            input: [{ role: "user", content: [{ type: "input_text", text: prompt }] }],
             tools: [{ type: "web_search" }],
             include: ["web_search_call.action.sources", "web_search_call.results"],
             stream: true,

@@ -1,6 +1,6 @@
 {
   "name": "oira666_pi-web-search",
-  "version": "0.0.1",
+  "version": "0.0.2",
   "description": "Provider-native web search for pi across Google Gemini, OpenAI, and Anthropic, plus Gemini URL Context",
   "type": "module",
   "main": "src/index.ts",
@@ -33,6 +33,8 @@
   ],
   "scripts": {
     "test": "node --test tests/*.test.mjs",
+    "check": "tsc --noEmit",
+    "test:e2e": "node --test tests/*.e2e.mjs",
     "test:real:web-search": "node tests/real-web-search.mjs",
     "test:real:url-context": "node tests/real-url-context.mjs"
   },

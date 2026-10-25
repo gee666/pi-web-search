@@ -38,10 +38,16 @@ The extension does not switch models or fall back to another configured model. I
 
 ```bash
 cp .env.example .env   # edit with your models
-npm test               # unit tests
+npm test               # deterministic intent/parser tests
+npm run check          # SDK type validation
+npm run test:e2e       # installed global Pi: transport/lifecycle + live native search
 npm run test:real:web-search
 npm run test:real:url-context
 ```
+
+`test:e2e` requires `PI_EVERGREEN_PI_BIN` pointing to the installed global Pi executable. It never installs a runtime or silently skips live coverage. Model selection honors `PI_EVERGREEN_E2E_PROVIDER` (default `openai`), `PI_EVERGREEN_E2E_MODEL` (default `gpt-6-luna`), and `PI_EVERGREEN_E2E_REASONING` (default `medium`). The live check uses normal Pi provider authentication; tests do not read credential files. It makes a small native-search request, which may incur provider search charges.
+
+The deterministic CLI checks use isolated configuration and harmless credentials against a local HTTP/SSE server, explicitly loading `src/index.ts`. They compare actual transport requests with public request-hook observations, inspect persisted tool details, and cover retries, compaction, model changes, resume, new sessions, explicit tool disabling, and fresh Anthropic OAuth prompt identity across turns. Anthropic/Google/Codex service behavior beyond these fixtures still needs provider-specific live checks (`test:real:*`).
 
 ## License
 
