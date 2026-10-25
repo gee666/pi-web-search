@@ -40,14 +40,15 @@ The extension does not switch models or fall back to another configured model. I
 cp .env.example .env   # edit with your models
 npm test               # deterministic intent/parser tests
 npm run check          # SDK type validation
-npm run test:e2e       # installed global Pi: transport/lifecycle + live native search
+npm run test:evergreen # unit + SDK types + HTTP integration + global Pi E2E
+npm run test:e2e       # installed global Pi: transport/session + live native search
 npm run test:real:web-search
 npm run test:real:url-context
 ```
 
-`test:e2e` requires `PI_EVERGREEN_PI_BIN` pointing to the installed global Pi executable. It never installs a runtime or silently skips live coverage. Model selection honors `PI_EVERGREEN_E2E_PROVIDER` (default `openai`), `PI_EVERGREEN_E2E_MODEL` (default `gpt-6-luna`), and `PI_EVERGREEN_E2E_REASONING` (default `medium`). The live check uses normal Pi provider authentication; tests do not read credential files. It makes a small native-search request, which may incur provider search charges.
+`test:e2e` runs the installed global Pi executable from `EVERGREEN_PI_BIN`, falling back to `pi` on PATH. Set `EVERGREEN_E2E_MODEL` to a supported Pi model selector (for example `openai-codex/gpt-6-luna:low`). It never installs a runtime or silently skips live coverage. The live check uses normal Pi provider authentication; tests do not read credential files. It makes a small native-search request, which may incur provider search charges. All Pi subprocesses ignore stdin.
 
-The deterministic CLI checks use isolated configuration and harmless credentials against a local HTTP/SSE server, explicitly loading `src/index.ts`. They compare actual transport requests with public request-hook observations, inspect persisted tool details, and cover retries, compaction, model changes, resume, new sessions, explicit tool disabling, and fresh Anthropic OAuth prompt identity across turns. Anthropic/Google/Codex service behavior beyond these fixtures still needs provider-specific live checks (`test:real:*`).
+The deterministic CLI checks use isolated configuration and harmless credentials against a local HTTP/SSE server, explicitly loading `src/index.ts`. They compare transport requests with public request-hook observations, inspect persisted tool details, and cover retries, selected-model tool exposure, resume, and explicit tool disabling. HTTP integration tests cover all four supported API transports, Anthropic OAuth identity, Gemini video/URL retrieval, and unverified-answer warnings. Unit tests cover in-process model/tree transitions and fresh OAuth identity across turns. Provider service behavior beyond these fixtures still needs provider-specific live checks (`test:real:*`).
 
 ## License
 

@@ -46,7 +46,7 @@ const args = [
   prompt,
 ];
 
-const run = spawnSync(piBin, args, { encoding: 'utf8', maxBuffer: 20 * 1024 * 1024 });
+const run = spawnSync(piBin, args, { encoding: 'utf8', maxBuffer: 20 * 1024 * 1024, stdio: ['ignore', 'pipe', 'pipe'] });
 const output = `${run.stdout || ''}${run.stderr || ''}`;
 const toolStarts = [];
 const toolEnds = [];

@@ -35,6 +35,8 @@
     "test": "node --test tests/*.test.mjs",
     "check": "tsc --noEmit",
     "test:e2e": "node --test tests/*.e2e.mjs",
+    "test:integration": "node --test tests/*.integration.mjs",
+    "test:evergreen": "npm test && npm run check && npm run test:integration && npm run test:e2e",
     "test:real:web-search": "node tests/real-web-search.mjs",
     "test:real:url-context": "node tests/real-url-context.mjs"
   },

@@ -2,8 +2,8 @@
 import type { ExtensionAPI } from '@earendil-works/pi-coding-agent';
 import { appendFileSync } from 'node:fs';
 export default function(pi: ExtensionAPI) {
-  const provider = process.env.PI_EVERGREEN_E2E_PROVIDER || 'openai';
-  const id = process.env.PI_EVERGREEN_E2E_MODEL || 'gpt-6-luna';
+  const provider = 'evergreen-openai';
+  const id = 'search-sentinel';
   const endpoint = process.env.WEB_SEARCH_TEST_ENDPOINT;
   if (!endpoint) throw new Error('Test endpoint required');
   pi.registerProvider(provider, {
